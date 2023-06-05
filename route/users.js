@@ -11,7 +11,7 @@ const {
     userForgetPassword,
     resetForgetPassword,
     userPasswordChange,
-    getUserByUserId
+    getUserByUserId,
 } = require('../controller/users.js')
 
 const {
@@ -21,18 +21,9 @@ const { profileCache } = require("../middleware/cache.js");
 
 // AUTH Route
 // Unprotected
-router.post('/auth/login',
-    body('email').notEmpty().isEmail(),
-    body('password').notEmpty().trim().escape(),
-    loginUser)
-router.post('/auth/register',
-    body('name').notEmpty(),
-    body('email').notEmpty().isEmail(),
-    body('password').notEmpty().trim().escape(),
-    registerUser)
-router.post("/auth/forget",
-    body('email').notEmpty().isEmail(),
-    userForgetPassword);
+router.post('/auth/login', loginUser);
+router.post('/auth/register', registerUser);
+router.post("/auth/forget", body('email').notEmpty().isEmail(), userForgetPassword);
 
 // Token access
 router.post("/auth/resetPassword",

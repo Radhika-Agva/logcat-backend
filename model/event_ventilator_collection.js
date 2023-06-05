@@ -48,7 +48,7 @@
                 date:{
                   type:String,
                   required:[true,"Date time is required"]
-                },
+                }
               
             },
             schemaOptions

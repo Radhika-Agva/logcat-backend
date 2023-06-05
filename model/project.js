@@ -42,6 +42,9 @@ const projectSchema = mongoose.Schema({
         // unique:true,
         // required: [true, 'Collection name is required.']
     },
+    address:{
+        type:String, required:true, default:""
+    },
     status: {
         type: Boolean,
         default: true

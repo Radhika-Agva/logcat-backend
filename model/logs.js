@@ -1,34 +1,40 @@
 const mongoose = require("mongoose");
 
-const logsSchema = mongoose.Schema(
+const logsSchema = new mongoose.Schema(
   {
-   
-   
-    file: {
-      type: String,
-      required: [true, "Log file name is required."],
-    },
-    date: {
-      type: String,
-      required: [true, "Log date is required."],
-      default: Date.now()
+    deviceId:{
+      type:String, required:true, default:""
     },
     message: {
-      type: String,
-      // required: [true, "Log message is required"],
+      type: String, required:true, default:""
     },
-    filePath: {
-      type: String
+    version:{
+      type:String, required:true
     },
-    type: {
-      type: String,
-      default: "verbose",
-      enum: ["warn", "info", "error", "debug","verbose"],
+    file: {
+      type: String, required:true, default:""
     },
+    date:{
+      type:String, required:true,
+    }
+    // date: {
+    //   type: String,
+    //   required: [true, "Log date is required."],
+    //   default: Date.now()
+    // },
+    
+    // filePath: {
+    //   type: String
+    // },
+  //   type: {
+  //     type: String,
+  //     default: "verbose",
+  //     enum: ["warn", "info", "error", "debug","verbose"],
+  //   },
   },
   { timestamps: true }
 );
 
-const log = mongoose.model("Log", logsSchema);
+const logModel = mongoose.model("Log", logsSchema);
 
 module.exports = logsSchema;

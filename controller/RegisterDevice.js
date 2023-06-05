@@ -1,6 +1,6 @@
 const RegisterDevice = require("../model/RegisterDevice");
 const { validationResult } = require('express-validator');
-
+//Express module to be imported for the functioning of the routeer
 const registerDevice = async (req, res) => {
     try {
       const { DeviceId,AliasName, IMEI_NO, Hospital_Name,Ward_No,Ventilator_Operator,Doctor_Name } = req.body;
@@ -9,6 +9,7 @@ const registerDevice = async (req, res) => {
   
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log("isEmptty")
         return res.status(400).json({
           status: 0,
           data: {
@@ -28,7 +29,7 @@ const registerDevice = async (req, res) => {
       }
   
       if (DeviceIdTaken) {
-        
+        console.log("desdaqd")
         return res.status(409).json({
           status: 0,
           data: {
@@ -42,6 +43,7 @@ const registerDevice = async (req, res) => {
         });
       }
       if(AliasNameTaken){
+        console.log("alisaNmaw")
         return res.status(409).json({
           status: 0,
           data: {
@@ -54,10 +56,10 @@ const registerDevice = async (req, res) => {
           },
         });
       }
-
       
   
       if (!DeviceId|| !AliasName|| !IMEI_NO|| !Hospital_Name||!Ward_No||!Ventilator_Operator||!Doctor_Name) {
+        console.log("400 empty")
         return res.status(400).json({
           status: 0,
           data: {
@@ -79,13 +81,12 @@ const registerDevice = async (req, res) => {
          Ward_No,
          Ventilator_Operator,
          Doctor_Name,
-         
       });
   
       const savedDevice = await device.save(device)
   
       if (savedDevice) {
-        
+        console.log(`saved device : ${savedDevice}`)
         res.status(201).json({
           status: 1,
           data: { DeviceId: savedDevice.DeviceId, Hospital_Name: savedDevice.Hospital_Name},
@@ -120,7 +121,7 @@ const registerDevice = async (req, res) => {
   };
   const getAllRegisteredDevice = async (req, res) => {
     try {
-      const allRegisteredDevice= await RegisterDevice .find().sort({'_id':-1})
+      const allRegisteredDevice= await RegisterDevice.find().sort({'_id':-1})
       
       return res.status(200).json({
         status: 1,
@@ -195,7 +196,7 @@ const registerDevice = async (req, res) => {
 
   const getRegisterDeviceById=async(req,res)=>{
     try {
-      const { did } = req.params;
+      const { did } = req.params.DeviceId;
     const RegisterDeviceCollection=await RegisterDevice.findOne({deviceId:did});//getRegisterDeviceById
    // console.log('registerDeviceCollection',RegisterDeviceCollection)
     if(!RegisterDeviceCollection){

@@ -18,129 +18,6 @@ const s3 = new AWS.S3({
   region: 'ap-south-1',
 });
 
-// This function will be replaced by createLogsV2
-const createLogs = async (req, res) => {
-  try {
-    const { project_code } = req.params;
-    // check project exist or not
-    const findProjectWithCode = await Projects.findOne({ code: project_code });
-
-    if (!findProjectWithCode) {
-      return res.status(404).json({
-        status: 0,
-        data: {
-          err: {
-            generatedTime: new Date(),
-            errMsg: 'Project not found',
-            msg: 'Project not found',
-            type: 'Validation Error',
-          },
-        },
-      });
-    }
-
-    const collectionName = findProjectWithCode.collection_name;
-    // console.log(collectionName,'collectionName')
-
-    const modelReference = require(`../model/${collectionName}`);
-    console.log(modelReference, 'modelReference')
-
-    const { did, version, type, log, device } = req.body;
-
-    //  above details will be put in project tables
-
-    //  Make entries in Device
-    const Dvc = await new Device({
-      did: device.did,
-      name: device.name,
-      manufacturer: device.manufacturer,
-      os: {
-        name: device.os.name,
-        type: device.os.type,
-      },
-      battery: device.battery,
-    });
-
-    const isDeviceSaved = await Dvc.save(Dvc);
-
-    if (!isDeviceSaved) {
-      res.status(500).json({
-        status: 0,
-        data: {
-          err: {
-            generatedTime: new Date(),
-            errMsg: 'Device not saved',
-            msg: 'Device not saved',
-            type: 'MongodbError',
-          },
-        },
-      });
-    }
-
-
-
-    const putDataIntoLoggerDb = await new modelReference({
-
-      version: version,
-      type: type,
-      did: did,
-      device: isDeviceSaved._id,    //make changes here for save device_id in database
-      log: {
-
-        file: log.file,
-        date: log.date,
-        message: decodeURI(log.msg),
-        type: log.type,
-      },
-
-    });
-    //console.log(log.date,'log.date');
-
-    const isLoggerSaved = await putDataIntoLoggerDb.save(putDataIntoLoggerDb);
-
-    if (!isLoggerSaved) {
-      return res.status(500).json({
-        status: 0,
-        data: {
-          err: {
-            generatedTime: new Date(),
-            errMsg: 'Project not saved',
-            msg: 'Project not saved',
-            type: 'Internal Server Error',
-          },
-        },
-      });
-    }
-
-    if (log.type == 'error') {
-      findProjectWithCode.reportEmail.map((email) => {
-        const url = `${log.msg}`;
-
-        new Email(email, url).sendCrash();
-      });
-    }
-
-    res.status(201).json({
-      status: 1,
-      data: {},
-      message: 'Successful',
-    });
-  } catch (err) {
-    return res.status(500).json({
-      status: -1,
-      data: {
-        err: {
-          generatedTime: new Date(),
-          errMsg: err.stack,
-          msg: err.message,
-          type: err.name,
-        },
-      },
-    });
-  }
-};
-
-
 const createLogsV2 = async (req, res) => {
   try {
     const { project_code } = req.params;
@@ -845,13 +722,12 @@ const createAlerts = async (req, res, next) => {
     });
   }
 };
+
 const createEvents = async (req, res, next) => {
   try {
-
     const { project_code } = req.params;
     const findProjectWithCode = await Projects.findOne({ code: project_code });
     //console.log(findProjectWithCode,'findProjectWithProjectCode----')
-
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -884,14 +760,12 @@ const createEvents = async (req, res, next) => {
         },
       });
     }
-
-
-
     const collectionName = findProjectWithCode.event_collection_name;
     //console.log(collectionName,'collectionName-----')
     const modelReference = require(`../model/${collectionName}`);
     //console.log(modelReference,'modelReference');
     const { did, type, message, date } = req.body;
+    console.log(`did : ${did}`)
     if (!did || !type || !message || !date) {
       return res.status(400).json({
         status: 0,
@@ -904,24 +778,23 @@ const createEvents = async (req, res, next) => {
           },
         },
       });
-
     }
     const events = await new modelReference({
       did: did,
       message: message,
       type: type,
-      date: date
+      date: date,
     });
+    console.log(`did : ${did} message : ${message} type : ${type} date : ${date}`);
     const SaveEvents = await events.save(events);
     if (SaveEvents) {
       res.status(201).json({
         status: 1,
         data: { eventCounts: SaveEvents.length },
-        message: 'Event add!',
+        message: 'Event has been added successfully!',
 
       });
     }
-
     else {
       res.status(500).json({
         status: 0,
@@ -935,9 +808,6 @@ const createEvents = async (req, res, next) => {
         },
       }); I
     }
-
-
-
   }
   catch (err) {
     return res.status(500).json({
@@ -999,8 +869,8 @@ const createTrends = async (req, res, next) => {
     console.log(collectionName,'collectionName-----')
     const modelReference = require(`../model/${collectionName}`);
     console.log(modelReference,'modelReference');
-    const { did, type,mode,pip,peep,mean_Airway,vti,vte,mve,mvi,fio2,respiratory_Rate,ie,tinsp,texp,averageLeak} = req.body;
-    if (!did || !type ||!mode|| !pip|| !peep|| !mean_Airway|| !vti|| !vte|| !mve|| !mvi|| !fio2|| !respiratory_Rate|| !ie|| !tinsp|| !texp|| !averageLeak) {
+    const { did,time, type,mode,pip,peep,mean_Airway,vti,vte,mve,mvi,fio2,respiratory_Rate,ie,tinsp,texp,averageLeak,sPo2,pr} = req.body;
+    if (!did || !time || !type ||!mode|| !pip|| !peep|| !mean_Airway|| !vti|| !vte|| !mve|| !mvi|| !fio2|| !respiratory_Rate|| !ie|| !tinsp|| !texp|| !averageLeak || !sPo2 || !pr) {
       return res.status(400).json({
         status: 0,
         data: {
@@ -1016,6 +886,7 @@ const createTrends = async (req, res, next) => {
     }
     const trends = await new modelReference({
       did:did,
+      time:time,
        type:type,
        mode:mode,
        pip:pip,
@@ -1030,7 +901,9 @@ const createTrends = async (req, res, next) => {
        ie:ie,
        tinsp:tinsp,
        texp:texp,
-       averageLeak:averageLeak
+       averageLeak:averageLeak,
+       sPo2:sPo2,
+       pr:pr
     });
     const SaveTrends = await trends.save(trends);
     if (SaveTrends) {
@@ -3183,7 +3056,6 @@ const getErrorCountByVersion = async (req, res) => {
 };
 
 module.exports = {
-  createLogs,
   createLogsV2,
   createAlerts,
   createTrends,

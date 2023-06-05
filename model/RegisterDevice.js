@@ -1,46 +1,55 @@
 const mongoose = require('mongoose')
+const Schema = mongoose.Schema;
 
 const RegisterDeviceSchema = mongoose.Schema({
-    DeviceId:{
-        required:[true, "did is required"],
+    userId: {
+        type: Schema.Types.ObjectId,
+        ref: "User" 
+    },
+    deviceId: { 
+        type: String,
+        required: true 
+    },
+    status: { 
+        type: String,
+        default : "" 
+    },
+    departmentName: { 
+        type: String,
+        required: true,
+        default: "" 
+    },
+    hospitalName: {
+        required: true,
+        type: String,
+        default: ""
+    },
+    wardNo: {
+        required: true,
         type: String
     },
-    AliasName:{
-        required:[true,'AliasName is required'],
-        type:String
-
+    doctorName: {
+        required: true,
+        type: String,
+        default: ""
     },
-    IMEI_NO:{
-        required:[true,"IMEI_NO is required"],
-        type:String
+    bioMed: {
+        type: String,
+        required: true,
+        default:""
     },
-    Hospital_Name:{
-        required:[true,"Hospital Name is required"],
-        type:String
-
+    IMEI_NO: {
+        type: String,
+        required: true,
+        default: ""
+    },  
+    ventilatorOperator: {
+        type: String,
+        required: true,
+        default: ""
     },
-    Ward_No:{
-        required:[true,"Ward Number is required"],
-        type:String
+},
+    { timestamps: true })
 
-    },
-    Ventilator_Operator:{
-        required:[true,"Ventilator Operator name is required"],
-        type:String
-    },
-    Doctor_Name:{
-        required:[true,"Doctor Name is required"],
-        type:String
-    },
-
-
-    
-
-    
- 
-}, {timestamps: true})
-
-const RegisterDevice = mongoose.model('RegisterDevice',RegisterDeviceSchema)
-
-
+const RegisterDevice = mongoose.model('registered_devices', RegisterDeviceSchema)
 module.exports = RegisterDevice

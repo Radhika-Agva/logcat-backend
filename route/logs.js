@@ -41,17 +41,23 @@ const {
   dateWiseLogOccurrencesByLogMsgWithDeviceId,
   crashlyticsData2,
   getTrendsWithFilter,
-  getTrendsById
+  getTrendsById,
 } = require("../controller/logs");
-
+// New controller
+const logController = require('../controller/logController.js');
+const locationController = require('../controller/locationController.js');
+const calibrationController = require('../controller/calibrationController.js');
+const deviceController = require('../controller/deviceController');
 const { isAuth } = require("../middleware/authMiddleware");
 
 const { validateHeader } = require("../middleware/validateMiddleware");
 
-// Unprotected
-
-// This route will be replaced by createLogsV2 
-router.post("/:project_code", createLogs);
+// Unprotected routes
+router.post("/:project_code", logController.createNewLog);
+router.post("/location/:project_code", locationController.saveNewLocation);
+router.post('/calibration/:project_code', calibrationController.saveCalibrationData);
+router.post('/services/:project_code', deviceController.addDeviceService);
+router.get('/services/:deviceId/:project_code', deviceController.getServicesById);
 
 router.post(
   "/v2/:project_code",
@@ -129,6 +135,11 @@ router.get("/deviceAlerts/:did",getAlertsById);
 router.get("/deviceEvents/:did",getEventsById);
 router.get("/deviceLogs/:device",getLogsById);
 router.get("/Allevents/Events",getAllEvents);
+
+
+router.get("/example", async (req,res)=>{
+    console.log("value of something")
+})
 
 router.get("/get-crashlytics-data/:projectCode", isAuth, crashlyticsData);
 router.get("/log-occurrences-datewise/:projectCode", isAuth, dateWiseLogOccurrencesByLogMsg);

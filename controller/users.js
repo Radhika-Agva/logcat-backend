@@ -8,130 +8,202 @@ let redisClient = require('../config/redisInit');
 const { validationResult } = require('express-validator');
 
 const jwtr = new JWTR(redisClient);
+const Joi = require('joi');
+const User = require('../model/users');
+const sendEmail = require('../helper/sendEmail.js');
+
 /**
  * api      POST @/api/logger/register
  * desc     @register for logger access only
  */
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    const emailTaken = await Users.findOne({ email: email });
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
+    const schema = Joi.object({
+      firstName: Joi.string().required(),
+      lastName: Joi.string().required(),
+      email: Joi.string().email().required(),
+      hospitalName: Joi.string().required(),
+      passwordHash: Joi.string().min(3).max(15).required(),
+    })
+    let result = schema.validate(req.body);
+    if (result.error) {
       return res.status(400).json({
-        status: 0,
-        data: {
-          err: {
-            generatedTime: new Date(),
-            errMsg: errors
-              .array()
-              .map((err) => {
-                return `${err.msg}: ${err.param}`;
-              })
-              .join(' | '),
-            msg: 'Invalid data entered.',
-            type: 'ValidationError',
-          },
-        },
-      });
+        statusCode: 400,
+        statusValue: "FAIL",
+        message: result.error.details[0].message,
+      })
     }
-
-    if (emailTaken) {
-      // throw new AppError(`Email already taken`, 409);
-      return res.status(409).json({
-        status: 0,
-        data: {
-          err: {
-            generatedTime: new Date(),
-            errMsg: 'Email already taken',
-            msg: 'Email already taken',
-            type: 'Duplicate Key Error',
-          },
-        },
-      });
-    }
-
-    if (!email || !name || !password) {
+    const checkEmail = await User.findOne({ email: req.body.email });
+    if (checkEmail) {
       return res.status(400).json({
-        status: 0,
-        data: {
-          err: {
-            generatedTime: new Date(),
-            errMsg: 'Please fill all the details.',
-            msg: 'Please fill all the details.',
-            type: 'Client Error',
-          },
-        },
+        statusCode: 400,
+        statusValue: "FAIL",
+        message:
+          "The email is already in use. Please try to login using the email address or sign up with a different email address. ",
       });
     }
-
     const salt = await bcrypt.genSalt();
-    const passwordHash = await bcrypt.hash(password, salt);
-
-    const user = await new Users({
-      name,
-      email,
-      isSuperAdmin: false,
-      passwordHash,
-      image: '',
+    let mpwd = await bcrypt.hash(req.body.passwordHash, salt);
+  
+    const insertData = new User({
+      firstName:req.body.firstName,
+      lastName:req.body.lastName,
+      email:req.body.email,
+      hospitalName:req.body.hospitalName,
+      passwordHash:mpwd,
+      userType:"User",
+      image:"",
+      isSuperAdmin:false,
+      accountStatus:"Initial",
     });
-
-    const savedUser = await user.save(user);
-
-    if (savedUser) {
-      const url = `${req.protocol}://${req.get('host')}/welcome`;
-
-      new Email(email, url).sendWelcome();
-
-      res.status(201).json({
-        status: 1,
-        data: { name: savedUser.name, avatar: savedUser.image },
-        message: 'Registered successfully!',
-      });
-    } else {
-      res.status(500).json({
-        status: 0,
-        data: {
-          err: {
-            generatedTime: new Date(),
-            errMsg: 'Some error happened during registration',
-            msg: 'Some error happened during registration',
-            type: 'MongodbError',
-          },
-        },
-      });
+    saveDoc = await insertData.save();
+    // Send the email
+    const emailSubject = "Welcome to our App";
+    const emailText = "Please verify email id";
+    await sendEmail(insertData.email, emailSubject, emailText);
+    if (saveDoc) {
+      return res.status(201).json({
+        statusCode:201,
+        statusValue:"SUCCESS",
+        message:"Congratulations! You have successfully signed up with us , Please login.",
+        data:saveDoc
+      })
     }
   } catch (err) {
-    return res.status(500).json({
-      status: -1,
-      data: {
-        err: {
-          generatedTime: new Date(),
-          errMsg: err.stack,
-          msg: err.message,
-          type: err.name,
-        },
-      },
-    });
+    res.status(500).json({
+      statusCode:500,
+      statusValue:"FAIL",
+      message:"Internal server error",
+      data:{
+        name:"user/registerUser",
+        err:err
+      }
+    })
   }
-};
+}
+
+// const registerUser = async (req, res) => {
+//   try {
+//     const { name, email, password } = req.body;
+//     const emailTaken = await Users.findOne({ email: email });
+
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       return res.status(400).json({
+//         status: 0,
+//         data: {
+//           err: {
+//             generatedTime: new Date(),
+//             errMsg: errors
+//               .array()
+//               .map((err) => {
+//                 return `${err.msg}: ${err.param}`;
+//               })
+//               .join(' | '),
+//             msg: 'Invalid data entered.',
+//             type: 'ValidationError',
+//           },
+//         },
+//       });
+//     }
+
+//     if (emailTaken) {
+//       // throw new AppError(`Email already taken`, 409);
+//       return res.status(409).json({
+//         status: 0,
+//         data: {
+//           err: {
+//             generatedTime: new Date(),
+//             errMsg: 'Email already taken',
+//             msg: 'Email already taken',
+//             type: 'Duplicate Key Error',
+//           },
+//         },
+//       });
+//     }
+
+//     if (!email || !name || !password) {
+//       return res.status(400).json({
+//         status: 0,
+//         data: {
+//           err: {
+//             generatedTime: new Date(),
+//             errMsg: 'Please fill all the details.',
+//             msg: 'Please fill all the details.',
+//             type: 'Client Error',
+//           },
+//         },
+//       });
+//     }
+
+//     const salt = await bcrypt.genSalt();
+//     const passwordHash = await bcrypt.hash(password, salt);
+
+//     const user = await new Users({
+//       name,
+//       email,
+//       isSuperAdmin: false,
+//       passwordHash,
+//       image: '',
+//     });
+
+//     const savedUser = await user.save(user);
+
+//     if (savedUser) {
+//       const url = `${req.protocol}://${req.get('host')}/welcome`;
+
+//       new Email(email, url).sendWelcome();
+
+//       res.status(201).json({
+//         status: 1,
+//         data: { name: savedUser.name, avatar: savedUser.image },
+//         message: 'Registered successfully!',
+//       });
+//     } else {
+//       res.status(500).json({
+//         status: 0,
+//         data: {
+//           err: {
+//             generatedTime: new Date(),
+//             errMsg: 'Some error happened during registration',
+//             msg: 'Some error happened during registration',
+//             type: 'MongodbError',
+//           },
+//         },
+//       });
+//     }
+//   } catch (err) {
+//     return res.status(500).json({
+//       status: -1,
+//       data: {
+//         err: {
+//           generatedTime: new Date(),
+//           errMsg: err.stack,
+//           msg: err.message,
+//           type: err.name,
+//         },
+//       },
+//     });
+//   }
+// };
 
 /**
  *
- * @param {email, password} req
+ * @param {email, passwordHash} req
  * @param {token} res
  * @api     POST @/api/logger/login
  */
 
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
-
+    const { email, passwordHash } = req.body;
+    // console.log(process.env.JWT_SECRET)
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({
-        status: 0,
+      return res.status(200).json({
+        statusCode: 400,
+        statusValue:"FAIL",
+        message:"You have entered wrong credentials. Please enter valid credentials",
         data: {
           err: {
             generatedTime: new Date(),
@@ -151,8 +223,10 @@ const loginUser = async (req, res) => {
     const isUserExist = await Users.findOne({ email: email });
 
     if (!isUserExist) {
-      return res.status(404).json({
-        status: 0,
+      return res.status(200).json({
+        statusCode: 404,
+        statusValue:"FAIL",
+        message:"User not found.",
         data: {
           err: {
             generatedTime: new Date(),
@@ -163,15 +237,15 @@ const loginUser = async (req, res) => {
         },
       });
     }
-
     const isPasswordCorrect = await bcrypt.compare(
-      password,
+      passwordHash,
       isUserExist.passwordHash
     );
-
     if (!isPasswordCorrect) {
-      return res.status(401).json({
-        status: 0,
+      return res.status(200).json({
+        statusCode: 401,
+        statusValue:"FAIL",
+        message:"You have entered wrong credentials ! please enter correct credentials.",
         data: {
           err: {
             generatedTime: new Date(),
@@ -182,26 +256,29 @@ const loginUser = async (req, res) => {
         },
       });
     }
-
     const id = { user: isUserExist._id };
     const token = await jwtr.sign(id, process.env.JWT_SECRET, {
       expiresIn: '15d',
     });
-
     return res.status(200).json({
-      status: 1,
-      message: `Logged in Successfully`,
+      statusCode: 200,
+      statusValue:"SUCCESS",
+      message: `Logged in Successfully!`,
       data: {
         token: token,
-        name: isUserExist.name,
+        name: `${isUserExist.firstName ? isUserExist.firstName : ""} ${ isUserExist.lastName ? isUserExist.lastName : ""}`,
         email: isUserExist.email,
+        hospitalName:isUserExist.hospitalName,
         image: isUserExist.image,
+        userType:isUserExist.userType,
         isSuperAdmin: isUserExist.isSuperAdmin,
       },
     });
   } catch (err) {
     return res.status(500).json({
-      status: -1,
+      statusCode: 500,
+      statusValue:"FAIL",
+      message:"Internal server error!",
       data: {
         err: {
           generatedTime: new Date(),
@@ -494,7 +571,9 @@ const resetForgetPassword = async (req, res) => {
 const logoutUser = async (req, res) => {
   try {
     // const gettoken = req.headers["authorization"].split(" ")[1];
+    // console.log(gettoken)
     await jwtr.destroy(req.jti);
+    console.log(jwtr);
     return res
       .status(200)
       .json({ status: 1, data: {}, message: 'Logged out successfully!' });
