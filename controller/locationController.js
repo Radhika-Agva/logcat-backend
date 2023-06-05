@@ -55,10 +55,19 @@ const saveNewLocation = async (req, res) => {
     }
 }
 
+const getLocationByDeviceId = async (req, res) => {
+    try {
+       
+    } catch (error) {
+
+    }
+}
+
 
 
 
 
 module.exports = {
-    saveNewLocation
+    saveNewLocation,
+    getLocationByDeviceId
 }

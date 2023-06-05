@@ -53,10 +53,45 @@ const saveCalibrationData = async (req, res) => {
     }
 }
 
-
+const getCalibrationByDeviceId = async (req, res) => {
+    try {
+        const { deviceId, project_code } = req.params;
+        if (!deviceId) {
+            return res.status(400).json({
+              statusCode: 400,
+              statusValue: "Validation error",
+              message: "Device Id is required!"
+            })
+        }
+        const getData = await calibrationModel.find({deviceId},{ "createdAt": 0, "updatedAt": 0, "__v": 0 })
+        if (!getData.length)
+        return res.status(404).json({
+            statusCode: 404,
+            statusValue: "FAIL",
+            message: "Data not found."
+        })
+        return res.status(200).json({
+            statusCode: 200,
+            statusValue:"SUCCESS",
+            message:"Calibration data get successfully.",
+            data:getData
+        })
+    } catch (error) {
+      return res.status(500).json({
+        statusCode: 500,
+        statusValue:"FAIL",
+        message: "Internal server error",
+        data : {
+            name: "calibrationController/getCalibrationByDeviceId",
+            error:error
+        }
+      })
+    }
+}
 
 
 
 module.exports = {
-    saveCalibrationData
+    saveCalibrationData,
+    getCalibrationByDeviceId
 }
